@@ -11,7 +11,7 @@ Y_range = range(-204, 203)
 lands = []
 estates = []
 orders = []
-buffer_size = 1
+buffer_size = 10000
 ft_lands = True
 ft_estates = True
 ft_orders = True
@@ -141,32 +141,50 @@ def parse_land_info(x, y, land_info):
                 })
     return land, estate, orders
 
-def save_land_info(land, estate, _orders):
-    global lands, estates, orders, ft_lands, ft_estates, ft_orders
+def save_lands():
+    global lands, ft_lands
+    if len(lands) == 0:
+        return
+    lands_df = pd.DataFrame(lands)
+    lands_df.to_csv("files/thesandbox/lands.csv", index=False, mode="a" if not ft_lands else "w", header=ft_lands, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    lands = []
+    ft_lands = False
+    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(lands_df)} lands")
+
+def save_estates():
+    global estates, ft_estates
+    if len(estates) == 0:
+        return
+    estates_df = pd.DataFrame(estates)
+    estates_df.to_csv("files/thesandbox/estates.csv", index=False, mode="a" if not ft_estates else "w", header=ft_estates, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    estates = []
+    ft_estates = False
+    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(estates_df)} estates")
+
+def save_orders():
+    global orders, ft_orders
+    if len(orders) == 0:
+        return
+    orders_df = pd.DataFrame(orders)
+    orders_df.to_csv("files/thesandbox/orders.csv", index=False, mode="a" if not ft_orders else "w", header=ft_orders, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    orders = []
+    ft_orders = False
+    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(orders_df)} orders")
+
+def save_land_info(land=None, estate=None, _orders=None, force=False):
+    global lands, estates, orders
     if land is not None:
         lands.append(land)
     if estate is not None:
         estates.append(estate)
     if _orders is not None:
         orders.extend(_orders)
-    if len(lands) >= buffer_size:
-        lands_df = pd.DataFrame(lands)
-        lands_df.to_csv("files/thesandbox/lands.csv", index=False, mode="a" if not ft_lands else "w", header=ft_lands, encoding="utf-8", quoting=csv.QUOTE_ALL)
-        lands = []
-        ft_lands = False
-        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(lands_df)} lands")
-    if len(estates) >= buffer_size:
-        estates_df = pd.DataFrame(estates)
-        estates_df.to_csv("files/thesandbox/estates.csv", index=False, mode="a" if not ft_estates else "w", header=ft_estates, encoding="utf-8", quoting=csv.QUOTE_ALL)
-        estates = []
-        ft_estates = False
-        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(estates_df)} estates")
-    if len(orders) >= buffer_size:
-        orders_df = pd.DataFrame(orders)
-        orders_df.to_csv("files/thesandbox/orders.csv", index=False, mode="a" if not ft_orders else "w", header=ft_orders, encoding="utf-8", quoting=csv.QUOTE_ALL)
-        orders = []
-        ft_orders = False
-        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(orders_df)} orders")
+    if len(lands) >= buffer_size or force:
+        save_lands()
+    if len(estates) >= buffer_size or force:
+        save_estates()
+    if len(orders) >= buffer_size or force:
+        save_orders()
 
 def main():
     for x in X_range:
@@ -189,6 +207,7 @@ def test():
             land, estate, orders = parse_land_info(x, y, land_info)
             save_land_info(land, estate, orders)
             time.sleep(0.15)
+    save_land_info(force=True)
 
 if __name__ == "__main__":
     test()
