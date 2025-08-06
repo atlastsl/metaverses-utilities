@@ -1,0 +1,8 @@
+# Basic development packages
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Development tools (optional)
+# pytest>=7.4.0
+# black>=23.0.0
+# flake8>=6.0.0 
