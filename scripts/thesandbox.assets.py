@@ -247,6 +247,7 @@ def main():
             land_info = get_land_info_with_retry(x, y, max_tries=5)
             land, estate, _orders = parse_land_info(x, y, land_info)
             save_land_info(land, estate, _orders)
+            i += 1
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Done {x}, {y} - {i}/{total}")
             time.sleep(0.15)
 
@@ -264,6 +265,7 @@ def test():
             land_info = get_land_info_with_retry(x, y, max_tries=5)
             land, estate, _orders = parse_land_info(x, y, land_info)
             save_land_info(land, estate, _orders)
+            i += 1
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Done {x}, {y} - {i}/{total}")
             time.sleep(0.15)
     save_land_info(force=True)
