@@ -11,21 +11,39 @@ Y_range = range(-204, 203)
 lands = []
 estates = []
 orders = []
-buffer_size = 10000
+estates_book = []
+buffer_size_lands = 10000
+buffer_size_estates = 10
+buffer_size_orders = 100
 ft_lands = True
 ft_estates = True
 ft_orders = True
 
+
 def get_land_info(x, y):
     url = f"https://api.sandbox.game/lands/coordinates?coordinateX={x}&coordinateY={y}&includeExperience=true&includeWallet=true&includeNft=true"
     response = requests.get(url)
-    if response.status_code == 200:
+    if response.status_code == 200 or response.status_code == 400:
         return response.json()
     else:
-        return response.json()
+        return None
+
+
+def get_land_info_with_retry(x, y, max_tries=5):
+    tries = 0
+    while tries < max_tries:
+        resp = get_land_info(x, y)
+        if resp is not None:
+            return resp
+        tries += 1
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - #{tries} Try to get land ({x}, {y}) failed. Wait 5 "
+              f"seconds to retry lands")
+        time.sleep(5)
+    return None
+
 
 def parse_land_info(x, y, land_info):
-    land, estate, orders = None, None, []
+    land, estate, _orders = None, None, []
     if land_info is None or "error" in land_info:
         land = {
             "id": None,
@@ -64,7 +82,8 @@ def parse_land_info(x, y, land_info):
         land = {
             "id": land_info["id"],
             "name": land_info["name"],
-            "description": (land_info["description"] if "description" in land_info and land_info["description"] is not None else "").replace("\n", "\\n").replace("\r", "\\r"),
+            "description": (land_info["description"] if "description" in land_info and land_info[
+                "description"] is not None else "").replace("\n", "\\n").replace("\r", "\\r"),
             "x": x,
             "y": y,
             "minted": True,
@@ -78,16 +97,21 @@ def parse_land_info(x, y, land_info):
             "url": land_info["url"],
             "videoUrl": land_info["videoUrl"],
             "migrated": land_info["migrated"],
-            "partnerId": land_info["partnerId"],
             "chainIdChangedAt": land_info["chainIdChangedAt"],
             "createdAt": land_info["createdAt"],
             "updatedAt": land_info["updatedAt"],
             "deletedAt": land_info["deletedAt"],
             "ownerAddress": land_info["ownerAddress"],
-            "ownerId": land_info["Wallet"]["User"]["id"] if "Wallet" in land_info and "User" in land_info["Wallet"] and land_info["Wallet"]["User"] is not None else None,
-            "ownerName": land_info["Wallet"]["User"]["username"] if "Wallet" in land_info and "User" in land_info["Wallet"] and land_info["Wallet"]["User"] is not None else None,
-            "ownerAvatarHash": land_info["Wallet"]["User"]["avatarHash"] if "Wallet" in land_info and "User" in land_info["Wallet"] and land_info["Wallet"]["User"] is not None else None,
-            "ownerAvatarExtension": land_info["Wallet"]["User"]["avatarExtension"] if "Wallet" in land_info and "User" in land_info["Wallet"] and land_info["Wallet"]["User"] is not None else None,
+            "ownerId": land_info["Wallet"]["User"]["id"] if "Wallet" in land_info and "User" in land_info["Wallet"] and
+                                                            land_info["Wallet"]["User"] is not None else None,
+            "ownerName": land_info["Wallet"]["User"]["username"] if "Wallet" in land_info and "User" in land_info[
+                "Wallet"] and land_info["Wallet"]["User"] is not None else None,
+            "ownerAvatarHash": land_info["Wallet"]["User"]["avatarHash"] if "Wallet" in land_info and "User" in
+                                                                            land_info["Wallet"] and land_info["Wallet"][
+                                                                                "User"] is not None else None,
+            "ownerAvatarExtension": land_info["Wallet"]["User"][
+                "avatarExtension"] if "Wallet" in land_info and "User" in land_info["Wallet"] and land_info["Wallet"][
+                "User"] is not None else None,
             "estate": land_info["estate"],
             "bundleId": land_info["bundleId"],
             "chainId": land_info["chainId"],
@@ -99,7 +123,9 @@ def parse_land_info(x, y, land_info):
             estate = {
                 "id": land_info["Estate"]["id"],
                 "name": land_info["Estate"]["name"],
-                "description": (land_info["Estate"]["description"] if "description" in land_info["Estate"] and land_info["Estate"]["description"] is not None else "").replace("\n", "\\n").replace("\r", "\\r"),
+                "description": (
+                    land_info["Estate"]["description"] if "description" in land_info["Estate"] and land_info["Estate"][
+                        "description"] is not None else "").replace("\n", "\\n").replace("\r", "\\r"),
                 "x": land_info["Estate"]["coordinateX"],
                 "y": land_info["Estate"]["coordinateY"],
                 "type": land_info["Estate"]["type"],
@@ -111,17 +137,33 @@ def parse_land_info(x, y, land_info):
                 "updatedAt": land_info["Estate"]["updatedAt"],
                 "deletedAt": land_info["Estate"]["deletedAt"],
                 "videoUrl": land_info["Estate"]["videoUrl"],
-                "EstatePreviewHash": land_info["Estate"]["EstatePreviews"][0]["previewHash"] if len(land_info["Estate"]["EstatePreviews"]) > 0 else None,
-                "EstatePreviewExtension": land_info["Estate"]["EstatePreviews"][0]["previewExtension"] if len(land_info["Estate"]["EstatePreviews"]) > 0 else None,
+                "EstatePreviewHash": land_info["Estate"]["EstatePreviews"][0]["previewHash"] if len(
+                    land_info["Estate"]["EstatePreviews"]) > 0 else None,
+                "EstatePreviewExtension": land_info["Estate"]["EstatePreviews"][0]["previewExtension"] if len(
+                    land_info["Estate"]["EstatePreviews"]) > 0 else None,
                 "ownerAddress": land_info["Estate"]["ownerAddress"],
-                "ownerId": land_info["Estate"]["Wallet"]["User"]["id"] if "Wallet" in land_info["Estate"] and "User" in land_info["Estate"]["Wallet"] and land_info["Estate"]["Wallet"]["User"] is not None else None,
-                "ownerName": land_info["Estate"]["Wallet"]["User"]["username"] if "Wallet" in land_info["Estate"] and "User" in land_info["Estate"]["Wallet"] and land_info["Estate"]["Wallet"]["User"] is not None else None,
-                "ownerAvatarHash": land_info["Estate"]["Wallet"]["User"]["avatarHash"] if "Wallet" in land_info["Estate"] and "User" in land_info["Estate"]["Wallet"] and land_info["Estate"]["Wallet"]["User"] is not None else None,
-                "ownerAvatarExtension": land_info["Estate"]["Wallet"]["User"]["avatarExtension"] if "Wallet" in land_info["Estate"] and "User" in land_info["Estate"]["Wallet"] and land_info["Estate"]["Wallet"]["User"] is not None else None
+                "ownerId": land_info["Estate"]["Wallet"]["User"]["id"] if "Wallet" in land_info["Estate"] and "User" in
+                                                                          land_info["Estate"]["Wallet"] and
+                                                                          land_info["Estate"]["Wallet"][
+                                                                              "User"] is not None else None,
+                "ownerName": land_info["Estate"]["Wallet"]["User"]["username"] if "Wallet" in land_info[
+                    "Estate"] and "User" in land_info["Estate"]["Wallet"] and land_info["Estate"]["Wallet"][
+                                                                                      "User"] is not None else None,
+                "ownerAvatarHash": land_info["Estate"]["Wallet"]["User"]["avatarHash"] if "Wallet" in land_info[
+                    "Estate"] and "User" in land_info["Estate"]["Wallet"] and land_info["Estate"]["Wallet"][
+                                                                                              "User"] is not None else None,
+                "ownerAvatarExtension": land_info["Estate"]["Wallet"]["User"]["avatarExtension"] if "Wallet" in
+                                                                                                    land_info[
+                                                                                                        "Estate"] and "User" in
+                                                                                                    land_info["Estate"][
+                                                                                                        "Wallet"] and
+                                                                                                    land_info["Estate"][
+                                                                                                        "Wallet"][
+                                                                                                        "User"] is not None else None
             }
         if land_info["orders"] is not None and len(land_info["orders"]) > 0:
             for order in land_info["orders"]:
-                orders.append({
+                _orders.append({
                     "canceling": order["canceling"],
                     "endDate": order["endDate"],
                     "source": order["source"],
@@ -139,79 +181,93 @@ def parse_land_info(x, y, land_info):
                     "land": order["land"]["id"] if order["land"] is not None else None,
                     "landName": order["land"]["name"] if order["land"] is not None else None
                 })
-    return land, estate, orders
+    return land, estate, _orders
+
 
 def save_lands():
     global lands, ft_lands
     if len(lands) == 0:
         return
     lands_df = pd.DataFrame(lands)
-    lands_df.to_csv("files/thesandbox/lands.csv", index=False, mode="a" if not ft_lands else "w", header=ft_lands, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    lands_df.to_csv("files/thesandbox/lands.csv", index=False, mode="a" if not ft_lands else "w", header=ft_lands,
+                    encoding="utf-8", quoting=csv.QUOTE_ALL)
     lands = []
     ft_lands = False
     print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(lands_df)} lands")
+
 
 def save_estates():
     global estates, ft_estates
     if len(estates) == 0:
         return
     estates_df = pd.DataFrame(estates)
-    estates_df.to_csv("files/thesandbox/estates.csv", index=False, mode="a" if not ft_estates else "w", header=ft_estates, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    estates_df.to_csv("files/thesandbox/estates.csv", index=False, mode="a" if not ft_estates else "w",
+                      header=ft_estates, encoding="utf-8", quoting=csv.QUOTE_ALL)
     estates = []
     ft_estates = False
     print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(estates_df)} estates")
+
 
 def save_orders():
     global orders, ft_orders
     if len(orders) == 0:
         return
     orders_df = pd.DataFrame(orders)
-    orders_df.to_csv("files/thesandbox/orders.csv", index=False, mode="a" if not ft_orders else "w", header=ft_orders, encoding="utf-8", quoting=csv.QUOTE_ALL)
+    orders_df.to_csv("files/thesandbox/orders.csv", index=False, mode="a" if not ft_orders else "w", header=ft_orders,
+                     encoding="utf-8", quoting=csv.QUOTE_ALL)
     orders = []
     ft_orders = False
     print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Saved {len(orders_df)} orders")
 
+
 def save_land_info(land=None, estate=None, _orders=None, force=False):
-    global lands, estates, orders
+    global lands, estates, orders, estates_book
     if land is not None:
         lands.append(land)
     if estate is not None:
-        estates.append(estate)
+        if estate["id"] not in estates_book:
+            estates.append(estate)
+            estates_book.append(estate["id"])
     if _orders is not None:
         orders.extend(_orders)
-    if len(lands) >= buffer_size or force:
+    if len(lands) >= buffer_size_lands or force:
         save_lands()
-    if len(estates) >= buffer_size or force:
+    if len(estates) >= buffer_size_estates or force:
         save_estates()
-    if len(orders) >= buffer_size or force:
+    if len(orders) >= buffer_size_orders or force:
         save_orders()
 
+
 def main():
+    total = len(X_range)*len(Y_range)
+    i = 0
     for x in X_range:
         for y in Y_range:
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Processing {x}, {y}")
-            land_info = get_land_info(x, y)
-            land, estate, orders = parse_land_info(x, y, land_info)
-            save_land_info(land, estate, orders)
+            land_info = get_land_info_with_retry(x, y, max_tries=5)
+            land, estate, _orders = parse_land_info(x, y, land_info)
+            save_land_info(land, estate, _orders)
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Done {x}, {y} - {i}/{total}")
             time.sleep(0.15)
+
 
 def test():
     X_random_choices = random.choices(X_range, k=5)
     Y_random_choices = random.choices(Y_range, k=5)
     # X_random_choices = [-154]
     # Y_random_choices = [-13]
+    total = len(X_random_choices)*len(Y_random_choices)
+    i = 0
     for x in X_random_choices:
         for y in Y_random_choices:
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Processing {x}, {y}")
-            land_info = get_land_info(x, y)
-            land, estate, orders = parse_land_info(x, y, land_info)
-            save_land_info(land, estate, orders)
+            land_info = get_land_info_with_retry(x, y, max_tries=5)
+            land, estate, _orders = parse_land_info(x, y, land_info)
+            save_land_info(land, estate, _orders)
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Done {x}, {y} - {i}/{total}")
             time.sleep(0.15)
     save_land_info(force=True)
 
+
 if __name__ == "__main__":
     test()
-
-
-
-
