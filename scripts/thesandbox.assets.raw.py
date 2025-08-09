@@ -79,8 +79,8 @@ def save_data(data_chunk, data_name, buffer_size, force=False):
 
 
 def get_lands(buffer_size, test: bool = False):
-    X_range = range(-204, 203)
-    Y_range = range(-204, 203)
+    X_range = range(-204, 204)
+    Y_range = range(-204, 204)
     if test:
         X_range = random.choices(X_range, k=5)
         Y_range = random.choices(Y_range, k=5)
