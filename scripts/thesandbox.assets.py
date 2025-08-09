@@ -12,9 +12,9 @@ lands = []
 estates = []
 orders = []
 estates_book = []
-buffer_size_lands = 10000
-buffer_size_estates = 10
-buffer_size_orders = 100
+buffer_size_lands = 1 #10000
+buffer_size_estates = 1 #10
+buffer_size_orders = 1 #100
 ft_lands = True
 ft_estates = True
 ft_orders = True
@@ -189,7 +189,7 @@ def save_lands():
     if len(lands) == 0:
         return
     lands_df = pd.DataFrame(lands)
-    lands_df.to_csv("files/thesandbox/lands.csv", index=False, mode="a" if not ft_lands else "w", header=ft_lands,
+    lands_df.to_csv("../files/thesandbox/lands.csv", index=False, mode="a" if not ft_lands else "w", header=ft_lands,
                     encoding="utf-8", quoting=csv.QUOTE_ALL)
     lands = []
     ft_lands = False
@@ -201,7 +201,7 @@ def save_estates():
     if len(estates) == 0:
         return
     estates_df = pd.DataFrame(estates)
-    estates_df.to_csv("files/thesandbox/estates.csv", index=False, mode="a" if not ft_estates else "w",
+    estates_df.to_csv("../files/thesandbox/estates.csv", index=False, mode="a" if not ft_estates else "w",
                       header=ft_estates, encoding="utf-8", quoting=csv.QUOTE_ALL)
     estates = []
     ft_estates = False
@@ -213,7 +213,7 @@ def save_orders():
     if len(orders) == 0:
         return
     orders_df = pd.DataFrame(orders)
-    orders_df.to_csv("files/thesandbox/orders.csv", index=False, mode="a" if not ft_orders else "w", header=ft_orders,
+    orders_df.to_csv("../files/thesandbox/orders.csv", index=False, mode="a" if not ft_orders else "w", header=ft_orders,
                      encoding="utf-8", quoting=csv.QUOTE_ALL)
     orders = []
     ft_orders = False
@@ -253,8 +253,8 @@ def main():
 
 
 def test():
-    X_random_choices = random.choices(X_range, k=5)
-    Y_random_choices = random.choices(Y_range, k=5)
+    X_random_choices = random.choices(X_range, k=10)
+    Y_random_choices = random.choices(Y_range, k=10)
     # X_random_choices = [-154]
     # Y_random_choices = [-13]
     total = len(X_random_choices)*len(Y_random_choices)
@@ -272,4 +272,4 @@ def test():
 
 
 if __name__ == "__main__":
-    main()
+    test()
